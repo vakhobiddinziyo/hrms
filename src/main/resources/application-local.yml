@@ -1,0 +1,76 @@
+spring:
+  servlet:
+    multipart:
+      max-request-size: 250MB
+      max-file-size: 250MB
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5438/hrms
+    username: postgres
+    password: new2023
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        temp:
+          use_jdbc_metadata_defaults: false
+        jdbc:
+          lob:
+            non_contextual_creation: true
+        schema_update:
+          unique_constraint_strategy: RECREATE_QUIETLY
+    hibernate:
+      ddl-auto: update
+      naming:
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/hrms
+      auto-index-creation: true
+  sql:
+    init:
+      mode: always
+  main:
+    allow-bean-definition-overriding: true
+
+  mvc:
+    throw-exception-if-no-handler-found: true
+file-asset:
+  upload:
+    folder: ./uploads
+hashId:
+  salt: Hrms(e2@File
+  length: 10
+  alphabet: DdAa5Bb4Ii3Yy2Cc1UuMmRrSsFfOoLlWwKkQqXxHhEeVv0Tt6Zz7Pp8Gg9NnJj
+
+application:
+  security:
+    jwt:
+      secret-key: '5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437'
+      expiration: 3600000
+      refresh-token:
+        expiration: 86400000
+
+hik-vision:
+  client-url: 'http://127.0.0.1:2222/api/v1/'
+encrypt:
+  aes:
+    secret: 'zero-one-hr-tourniquet'
+
+sms:
+  valid:
+    length: 9
+    prefix: 998
+    codes: 33,50,90,91,93,94,95,97,98,99,77,88
+
+telegram:
+  hrms-bot:
+    token: '7909823573:AAGQCFrX51nQxjinjHWpa1032SPNzwSKIjY'
+    username: 'zhrmsbot'
+  error-bot:
+    token: '7520986619:AAGn0oHBZ66pGYqXqQnzhd7qcJSx1ajn5pE'
+    username: 'testzerohrbot'
+
+logging:
+  level:
+    org.springframework.security: TRACE
