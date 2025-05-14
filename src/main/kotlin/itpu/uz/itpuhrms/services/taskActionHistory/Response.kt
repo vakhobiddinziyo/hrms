@@ -37,7 +37,7 @@ data class TaskActionHistoryResponse(
                 fromState?.let { StateResponse.toDto(it) },
                 toState?.let { StateResponse.toDto(it) },
                 subjectEmployee?.let { EmployeeResponse.toDto(it) },
-                createdDate!!.time,
+                createdDate?.time ?: Date().time,
                 priority?.let { PriorityResponse.toResponse(it) },
                 dueDate,
                 startDate,
