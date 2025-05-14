@@ -1,7 +1,10 @@
 package itpu.uz.itpuhrms
 
+
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.exc.InvalidFormatException
+import itpu.uz.itpuhrms.base.BaseMessage
+import itpu.uz.itpuhrms.bot.ErrorBot
 import org.springframework.context.i18n.LocaleContextHolder
 import org.springframework.context.support.ResourceBundleMessageSource
 import org.springframework.http.HttpStatus
@@ -14,148 +17,141 @@ import org.springframework.web.bind.MissingRequestValueException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.servlet.NoHandlerFoundException
 import java.lang.reflect.InvocationTargetException
 import java.util.*
 
 
+class CustomFeignException(
+    val errorCode: Int,
+    val errorMsg: String,
+    val statusCode: Int,
+    val statusString: String,
+    val subStatusCode: String,
+    val httpStatus: Int,
+    override val message: String,
+) : RuntimeException(errorMsg)
+
+
 @ControllerAdvice
 class GlobalExceptionHandler(
-    private val errorMessageSource: ResourceBundleMessageSource, private val errorBot: ErrorBot
+    private val errorMessageSource: ResourceBundleMessageSource,
+    private val errorBot: ErrorBot
 ) {
 
     @ExceptionHandler(NoHandlerFoundException::class)
     fun handleNotFoundException(ex: NoHandlerFoundException): ResponseEntity<BaseMessage> {
-        val errorResponse = BaseMessage(
-            message = "Resource not found: ${ex.requestURL}",
-            code = 404,
-        )
-        return ResponseEntity(errorResponse, HttpStatus.NOT_FOUND)
+        val message = "Resource not found: ${ex.requestURL}"
+        return ResponseEntity(BaseMessage(404, message), HttpStatus.NOT_FOUND)
     }
 
     @ExceptionHandler(AuthenticationException::class)
-    fun handleAuthException(exception: AuthenticationException) =
-        ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(BaseMessage(401, exception.message))
+    fun handleAuthException(ex: AuthenticationException): ResponseEntity<BaseMessage> {
+        return ResponseEntity(BaseMessage(401, ex.message), HttpStatus.UNAUTHORIZED)
+    }
 
     @ExceptionHandler(BindException::class)
-    fun handleBindException(exception: BindException): ResponseEntity<Any> {
-        val fields: MutableMap<String, Any?> = HashMap()
-        for (fieldError in exception.bindingResult.fieldErrors) {
-            fields[fieldError.field] = fieldError.defaultMessage
-        }
-
-        val errorCode = ErrorCode.VALIDATION_ERROR
-        val message = errorMessageSource.getMessage(
-            errorCode.toString(), null, Locale(LocaleContextHolder.getLocale().language)
-        )
-        return ResponseEntity.badRequest().body(
-            ValidationErrorMessage(
-                errorCode.code, message, fields
-            )
-        )
+    fun handleBindException(ex: BindException): ResponseEntity<ValidationErrorMessage> {
+        val fields = ex.bindingResult.fieldErrors.associate { it.field to it.defaultMessage }
+        return ResponseEntity.badRequest().body(createValidationError(fields))
     }
 
     @ExceptionHandler(MissingRequestValueException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleMissingParams(ex: MissingRequestValueException): ResponseEntity<String> {
-        return when (ex) {
-            is MissingServletRequestParameterException -> {
-                val paramName = ex.parameterName
-                ResponseEntity("Missing required request parameter: $paramName", HttpStatus.BAD_REQUEST)
-            }
-
-            is MissingPathVariableException -> {
-                val variableName = ex.variableName
-                ResponseEntity("Missing required path variable: $variableName", HttpStatus.BAD_REQUEST)
-            }
-
-            else -> ResponseEntity.badRequest().body(ex.localizedMessage)
+        val message = when (ex) {
+            is MissingServletRequestParameterException -> "Missing request parameter: ${ex.parameterName}"
+            is MissingPathVariableException -> "Missing path variable: ${ex.variableName}"
+            else -> ex.localizedMessage ?: "Missing request value"
         }
+        return ResponseEntity(message, HttpStatus.BAD_REQUEST)
     }
 
     @ExceptionHandler(RuntimeException::class)
-    fun handleOtherExceptions(exception: RuntimeException): ResponseEntity<Any> {
-        when (exception) {
+    fun handleRuntimeExceptions(ex: RuntimeException): ResponseEntity<Any> {
+        return when (ex) {
             is HrmException -> {
-                return ResponseEntity.badRequest().body(exception.getErrorMessage(errorMessageSource))
+                ResponseEntity.badRequest().body(ex.getErrorMessage(errorMessageSource))
             }
 
             is MethodArgumentTypeMismatchException -> {
-                val fields: MutableMap<String, Any?> = HashMap()
-                fields[exception.name] = exception.value
-                val errorCode = ErrorCode.VALIDATION_ERROR
-                val message = errorMessageSource.getMessage(
-                    errorCode.toString(), null, Locale(LocaleContextHolder.getLocale().language)
-                )
-                return ResponseEntity.badRequest().body(
-                    ValidationErrorMessage(
-                        errorCode.code, message, fields
-                    )
-                )
+                val fields = mapOf(ex.name to ex.value)
+                ResponseEntity.badRequest().body(createValidationError(fields))
             }
 
             is IllegalArgumentException -> {
-                val targetException = (exception.cause?.cause?.cause as InvocationTargetException).targetException
-                if (targetException is HrmException) {
-                    return ResponseEntity.badRequest().body(
-                        targetException.getErrorMessage(
-                            errorMessageSource
-                        )
-                    )
+                val target = extractTargetException(ex)
+                if (target is HrmException) {
+                    return ResponseEntity.badRequest().body(target.getErrorMessage(errorMessageSource))
                 }
-
-                exception.printStackTrace()
-                errorBot.sendLog(exception)
-                return ResponseEntity.badRequest().body(BaseMessage(100, exception.localizedMessage))
+                ex.printStackTrace()
+                errorBot.sendLog(ex)
+                ResponseEntity.badRequest().body(BaseMessage(100, ex.localizedMessage))
             }
 
             is HttpMessageNotReadableException -> {
-                val cause = exception.cause
-                val fields: MutableMap<String, Any?> = HashMap()
+                val fields = mutableMapOf<String, Any?>()
+                val cause = ex.cause
                 if (cause is JsonMappingException) {
-                    cause.path.forEach { element ->
-                        fields[element.fieldName ?: ""] = if ((cause is InvalidFormatException)) cause.value else null
+                    cause.path.forEach { ref ->
+                        fields[ref.fieldName ?: ""] = if (cause is InvalidFormatException) cause.value else null
                     }
                 }
-
-                val errorCode = ErrorCode.VALIDATION_ERROR
-                val message = errorMessageSource.getMessage(
-                    errorCode.toString(), null, Locale(LocaleContextHolder.getLocale().language)
-                )
-                return ResponseEntity.badRequest().body(
-                    ValidationErrorMessage(
-                        errorCode.code, message, fields
-                    )
-                )
+                ResponseEntity.badRequest().body(createValidationError(fields))
             }
 
             is CustomFeignException -> {
-                val errorResponse = mapOf(
-                    "errorCode" to exception.errorCode,
-                    "errorMsg" to exception.errorMsg,
-                    "statusCode" to exception.statusCode,
-                    "statusString" to exception.statusString,
-                    "subStatusCode" to exception.subStatusCode,
-                    "message" to exception.message
+                val body = mapOf(
+                    "errorCode" to ex.errorCode,
+                    "errorMsg" to ex.errorMsg,
+                    "statusCode" to ex.statusCode,
+                    "statusString" to ex.statusString,
+                    "subStatusCode" to ex.subStatusCode,
+                    "message" to ex.message
                 )
-                return ResponseEntity(errorResponse, HttpStatus.valueOf(exception.httpStatus))
+                ResponseEntity(body, HttpStatus.valueOf(ex.httpStatus))
             }
 
-            is AccessDeniedException -> return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(BaseMessage(403, exception.message))
+            is AccessDeniedException -> {
+                ResponseEntity.status(HttpStatus.FORBIDDEN).body(BaseMessage(403, ex.message))
+            }
 
             else -> {
-                exception.printStackTrace()
-                errorBot.sendLog(exception)
-                return ResponseEntity.badRequest().body(BaseMessage(100, exception.localizedMessage))
+                ex.printStackTrace()
+                errorBot.sendLog(ex)
+                ResponseEntity.badRequest().body(BaseMessage(100, ex.localizedMessage))
             }
         }
     }
 
+    @ExceptionHandler(Exception::class)
+    fun handleGeneralException(ex: Exception): ResponseEntity<BaseMessage> {
+        ex.printStackTrace()
+        errorBot.sendLog(ex)
+        return ResponseEntity(BaseMessage(500, "Unexpected error occurred: ${ex.localizedMessage}"), HttpStatus.INTERNAL_SERVER_ERROR)
+    }
 
+    private fun createValidationError(fields: Map<String, Any?>): ValidationErrorMessage {
+        val errorCode = ErrorCode.VALIDATION_ERROR
+        val message = errorMessageSource.getMessage(
+            errorCode.toString(),
+            null,
+            Locale(LocaleContextHolder.getLocale().language)
+        )
+        return ValidationErrorMessage(errorCode.code, message, fields)
+    }
+
+    private fun extractTargetException(ex: IllegalArgumentException): Throwable? {
+        return try {
+            val cause = ex.cause?.cause?.cause
+            if (cause is InvocationTargetException) cause.targetException else null
+        } catch (_: Exception) {
+            null
+        }
+    }
 }
+
+
 
 data class ValidationErrorMessage(val code: Int, val message: String, val fields: Map<String, Any?>)
 
@@ -520,12 +516,4 @@ class NotSameMonthOfYearException : HrmException(){
     override fun errorType(): ErrorCode = ErrorCode.NOT_SAME_MONTH_OF_YEAR
 }
 
-class CustomFeignException(
-    val errorCode: Int,
-    val errorMsg: String,
-    val statusCode: Int,
-    val statusString: String,
-    val subStatusCode: String,
-    val httpStatus: Int,
-    override val message: String,
-) : RuntimeException(errorMsg)
+

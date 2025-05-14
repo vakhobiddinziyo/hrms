@@ -1,13 +1,10 @@
 package itpu.uz.itpuhrms
 
+import itpu.uz.itpuhrms.base.BaseEntity
+
 import jakarta.persistence.*
 import org.hibernate.annotations.ColumnDefault
 import org.springframework.context.i18n.LocaleContextHolder
-import org.springframework.data.annotation.CreatedBy
-import org.springframework.data.annotation.CreatedDate
-import org.springframework.data.annotation.LastModifiedBy
-import org.springframework.data.annotation.LastModifiedDate
-import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
@@ -15,16 +12,6 @@ import java.time.LocalTime
 import java.util.*
 
 
-@MappedSuperclass
-@EntityListeners(AuditingEntityListener::class)
-class BaseEntity(
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: Long? = null,
-    @CreatedDate @Temporal(TemporalType.TIMESTAMP) var createdDate: Date? = null,
-    @LastModifiedDate @Temporal(TemporalType.TIMESTAMP) var modifiedDate: Date? = null,
-    @CreatedBy var createdBy: String? = null,
-    @LastModifiedBy var lastModifiedBy: String? = null,
-    @Column(nullable = false) @ColumnDefault(value = "false") var deleted: Boolean = false
-)
 
 @Entity
 class Organization(
@@ -47,18 +34,13 @@ class User(
     @ManyToOne var avatarPhoto: FileAsset? = null
 ) : BaseEntity()
 
-/**
- * Agarda Employee 2-3 ta organizationda 3ishlayotgan bo'lsa,
- * N organizatsiyada oddiy xodim, X organizatsiyada admin bo'lishi mumkin.
- */
+
 @Entity
 class UserOrgStore(
     @ManyToOne var user: User,
     @ManyToOne var organization: Organization,
     @Enumerated(EnumType.STRING) var role: Role,
-    @ColumnDefault("false") var granted: Boolean // Bu field org admin role dagi user qaysi organizatsiyada haqiqatda orgadminlik
-                                                // huquqi berilganini bilish uchun qoshilgan edi. Misol uchun men birinchi organizatsiyada
-                                                // orgadmin bosam boshqasida oddiy employee boʻlishim ham mumkin
+    @ColumnDefault("false") var granted: Boolean
 ) : BaseEntity()
 
 @Entity
@@ -219,7 +201,7 @@ class Comment(
 ) : BaseEntity()
 
 
-// Apparat registratsiya
+
 @Entity
 class Tourniquet(
     @ManyToOne var organization: Organization,
@@ -232,7 +214,7 @@ class Tourniquet(
 ) : BaseEntity()
 
 
-// Ishchilarni kirish chiqish log lar
+
 @Entity
 class UserTourniquet(
     @ManyToOne var organization: Organization,
@@ -247,7 +229,6 @@ class UserTourniquet(
 ) : BaseEntity()
 
 
-// 1 oylik ish kun dam kunlarni jadvali
 @Entity
 class TourniquetTracker(
     val inTime: Date,
@@ -266,7 +247,6 @@ class TableDate(
 ) : BaseEntity()
 
 
-// Task bay ishlangan soatlar
 @Entity
 class TimeTracking(
     @ManyToOne val owner: User,
@@ -361,39 +341,6 @@ class TourniquetClient(
     var password: String
 ) : BaseEntity()
 
-@Document
-@CompoundIndex(def = "{'hashId': 1, 'organizationId': 1}", unique = true)
-class Visitor(
-    val hashId: String,
-    val organizationId: Long,
-    val userId: Long,
-    val person: UserInfoAddRequest,
-    // this is for faceImage
-    var imageHashId: String,
-    @Indexed(expireAfterSeconds = 86400 * 30) val createdAt: Date = Date(),
-    @org.springframework.data.annotation.Id var id: String? = null
-)
-
-@Document
-class UnknownPerson(
-    val organizationId: Long?,
-    val tourniquetId: Long?,
-    val tourniquetName: String?,
-    // this is for faceImage
-    var image: String?,
-    @Indexed(expireAfterSeconds = 86400 * 30) val createdAt: Date = Date(),
-    @org.springframework.data.annotation.Id var id: String? = null
-)
-
-@Document
-@CompoundIndex(def = "{'userId': 1, 'organizationId': 1}")
-class UserOrgSession(
-    val userId: Long,
-    val organizationId: Long,
-    @Enumerated(EnumType.STRING) var role: Role,
-    @Indexed(expireAfter = "5m") val createdDate: Date = Date(),
-    @org.springframework.data.annotation.Id var id: String? = null
-)
 
 @Entity
 class Message(
