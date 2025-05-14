@@ -2,15 +2,12 @@ package itpu.uz.itpuhrms
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.multipart.MultipartFile
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException
-import itpu.uz.itpuhrms.security.UserAuthenticationDetails
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
-import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.time.*
@@ -28,32 +25,6 @@ fun File.fileName() = name.substring(0, name.lastIndexOf("."))
 fun MultipartFile.fileExtension() = originalFilename!!.substring((originalFilename?.lastIndexOf(".") ?: 0) + 1)
 
 
-fun getUserName(): String? {
-    val authentication = SecurityContextHolder.getContext().authentication
-    if (!(authentication == null || !authentication.isAuthenticated || "anonymousUser" == authentication.principal)) {
-        logger.info { authentication.details }
-        return authentication.principal as String
-    }
-    return null
-}
-
-fun getUserId(): Long? {
-    val authentication = SecurityContextHolder.getContext().authentication
-    if (!(authentication == null || !authentication.isAuthenticated || "anonymousUser" == authentication.principal)) {
-        val userDetails = authentication.details as UserAuthenticationDetails
-        return userDetails.userId
-    }
-    return null
-}
-
-fun getRole(): Role? {
-    val authentication = SecurityContextHolder.getContext().authentication
-    if (!(authentication == null || !authentication.isAuthenticated || "anonymousUser" == authentication.principal)) {
-        val userDetails = authentication.details as UserAuthenticationDetails
-        return userDetails.role
-    }
-    return null
-}
 
 
 inline fun <reified R : Any> R.logger(): Logger = LoggerFactory.getLogger(R::class.java.canonicalName)
@@ -73,17 +44,7 @@ fun Gender.toLower(): String {
     return this.name.lowercase()
 }
 
-fun String.hashPinfl(): String {
-    val md = MessageDigest.getInstance("MD5")
-    val hash = md.digest(this.toByteArray(StandardCharsets.UTF_8))
-    val hexString = StringBuilder()
-    for (b in hash) {
-        val hex = Integer.toHexString(0xff and b.toInt())
-        if (hex.length == 1) hexString.append('0')
-        hexString.append(hex)
-    }
-    return hexString.toString()
-}
+
 
 fun String.isNumeric(): Boolean {
     return this.toLongOrNull() != null

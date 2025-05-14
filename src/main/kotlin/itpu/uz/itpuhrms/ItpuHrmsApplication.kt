@@ -1,5 +1,6 @@
 package itpu.uz.itpuhrms
 
+import itpu.uz.itpuhrms.base.BaseRepositoryImpl
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing

@@ -28,7 +28,6 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import org.springframework.web.servlet.i18n.SessionLocaleResolver
 import org.springframework.web.servlet.support.RequestContextUtils
-import itpu.uz.itpuhrms.getUserName
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -77,7 +76,6 @@ class WebMvcConfig(private val authorizationService: AuthorizationService) : Web
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(object : AsyncHandlerInterceptor {
             override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-                //   println(request.requestURI)
                 request.getHeader("hl")?.let {
                     RequestContextUtils.getLocaleResolver(request)
                         ?.setLocale(request, response, Locale(it))

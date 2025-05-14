@@ -1,7 +1,8 @@
 package itpu.uz.itpuhrms.security
 
 import itpu.uz.itpuhrms.*
-import itpu.uz.itpuhrms.services.BotSender
+import itpu.uz.itpuhrms.bot.BotSender
+import itpu.uz.itpuhrms.services.user.UserRepository
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse

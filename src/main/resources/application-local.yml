@@ -5,9 +5,9 @@ spring:
       max-file-size: 250MB
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5438/hrms
+    url: jdbc:postgresql://localhost:5432/hrms
     username: postgres
-    password: new2023
+    password: welltron
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
@@ -70,7 +70,16 @@ telegram:
   error-bot:
     token: '7520986619:AAGn0oHBZ66pGYqXqQnzhd7qcJSx1ajn5pE'
     username: 'testzerohrbot'
+  statistic-bot:
+    token: '7928099019:AAG4tmSVfzwdj50CPVAZALY_JZ5Lx-bxzP0'
+    username: 'itpuhrmsbot'
 
 logging:
   level:
     org.springframework.security: TRACE
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
