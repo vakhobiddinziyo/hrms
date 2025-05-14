@@ -5,9 +5,6 @@ import itpu.uz.itpuhrms.base.BaseEntity
 import jakarta.persistence.*
 import org.hibernate.annotations.ColumnDefault
 import org.springframework.context.i18n.LocaleContextHolder
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.Indexed
-import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalTime
 import java.util.*
 

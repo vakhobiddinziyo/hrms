@@ -46,6 +46,7 @@ dependencies {
 	testImplementation("org.junit.jupiter:junit-jupiter-api")
 	testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 	implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
 	implementation("org.json:json:20231013")
 	implementation("org.apache.poi:poi:5.3.0")
 	implementation("org.apache.poi:poi-ooxml:5.3.0")
