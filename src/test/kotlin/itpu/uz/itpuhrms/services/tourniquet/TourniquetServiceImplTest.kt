@@ -33,7 +33,14 @@ class TourniquetServiceImplTest {
         extraService = mockk()
 
         mockkObject(TourniquetResponse)
-        service = TourniquetServiceImpl(repository, aesEncryptionService, validationService, clientRepository, passwordEncoder, extraService)
+        service = TourniquetServiceImpl(
+            repository,
+            aesEncryptionService,
+            validationService,
+            clientRepository,
+            passwordEncoder,
+            extraService
+        )
     }
 
     @Test
@@ -42,7 +49,15 @@ class TourniquetServiceImplTest {
         val org = Organization("Org", null, Status.ACTIVE, "123456").apply { id = 1L }
         val encodedPass = "encodedPass"
 
-        val saved = Tourniquet(org, request.ip, request.name, request.username, encodedPass, request.type, request.description).apply { id = 10L }
+        val saved = Tourniquet(
+            org,
+            request.ip,
+            request.name,
+            request.username,
+            encodedPass,
+            request.type,
+            request.description
+        ).apply { id = 10L }
         val response = TourniquetResponse(
             id = saved.id!!,
             ip = saved.ip,
@@ -69,8 +84,17 @@ class TourniquetServiceImplTest {
     fun `getByOrganization should return tourniquet page`() {
         val org = Organization("Org", null, Status.ACTIVE, "123456").apply { id = 1L }
         val pageable = PageRequest.of(0, 10)
-        val entity = Tourniquet(org, "192.168.1.1", "T1", "admin", "pass", TourniquetType.DEFAULT, "desc").apply { id = 20L }
-        val response = TourniquetResponse(entity.id!!, entity.ip, entity.name, entity.username, entity.description, entity.type, OrgAdminResponse.toDto(org))
+        val entity =
+            Tourniquet(org, "192.168.1.1", "T1", "admin", "pass", TourniquetType.DEFAULT, "desc").apply { id = 20L }
+        val response = TourniquetResponse(
+            entity.id!!,
+            entity.ip,
+            entity.name,
+            entity.username,
+            entity.description,
+            entity.type,
+            OrgAdminResponse.toDto(org)
+        )
 
         every { extraService.getOrgFromCurrentUser() } returns org
         every { repository.findAllByOrganizationIdAndDeletedFalse(org.id!!, pageable) } returns PageImpl(listOf(entity))

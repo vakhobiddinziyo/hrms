@@ -53,6 +53,7 @@ This project aims to:
 Unit tests and integration tests are written using:
 - `MockK` for mocking services and repositories
 - `@SpringBootTest` and `@DataJpaTest` for integration
+- 
 
 Run tests using:
 
@@ -60,7 +61,19 @@ Run tests using:
 ./gradlew test
 ```
 
+
 ## 🚀 Run the Project
+
+This project supports running the backend locally while using Docker Compose for databases.
+
+---
+
+### 🐳 Step 1: Start Databases with Docker Compose
+
+Make sure Docker is running, then start PostgreSQL and MongoDB containers:
+
+```bash
+docker compose up -d
 
 1. Clone the repo
 2. Configure application properties:

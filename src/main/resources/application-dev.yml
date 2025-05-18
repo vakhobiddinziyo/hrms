@@ -5,7 +5,7 @@ spring:
       max-file-size: 250MB
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/hrms
+    url: jdbc:postgresql://127.0.0.1:5433/hrms
     username: postgres
     password: welltron
   jpa:
@@ -25,7 +25,7 @@ spring:
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl
   data:
     mongodb:
-      uri: mongodb://localhost:27017/hrms
+      uri: mongodb://127.0.0.1:27018/hrms
       auto-index-creation: true
   sql:
     init:

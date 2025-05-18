@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hrms
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # external:internal
+
+  mongo:
+    image: mongo:6.0
+    restart: always
+    container_name: mongo
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodata:/data/db
+
+volumes:
+  pgdata:
+  mongodata:
